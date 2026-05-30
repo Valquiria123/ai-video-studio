@@ -185,7 +185,7 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
 
 // ── ROUTES ───────────────────────────────────────────────────────────────────
 
-// Save config keys at runtime (stores in process.env for the session)
+// Save config keys at runtime
 app.post('/api/config', (req, res) => {
   const { key, value, voiceId } = req.body;
   const map = { claude: 'CLAUDE_API_KEY', eleven: 'ELEVENLABS_API_KEY', replicate: 'REPLICATE_API_TOKEN', pixabay: 'PIXABAY_API_KEY' };
