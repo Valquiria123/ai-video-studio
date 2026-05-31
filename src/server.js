@@ -237,6 +237,7 @@ Idea: "${idea}" | Duración: ${duracion} | Tono: ${tono}`
     }
     res.json(data);
   } catch (e) {
+    console.error('ANALYZE ERROR:', e.message, e.response?.data || '');
     res.status(500).json({ error: e.message });
   }
 });
