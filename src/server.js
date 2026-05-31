@@ -128,8 +128,8 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
     const cmd = ffmpeg();
     const imagePaths = scenes.map(s => s.imagePath);
 
-    // Add each image as input
-    imagePaths.forEach(img => cmd.input(img).inputOptions(['-loop 1', '-t 8']));
+    // Add each image as input with shorter duration
+    imagePaths.forEach(img => cmd.input(img).inputOptions(['-loop 1', '-t 6']));
 
     // Add each audio narration
     audioFiles.forEach(a => cmd.input(a));
@@ -143,30 +143,24 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
     const audioCount = audioFiles.length;
     const hasM = hasMusic && fs.existsSync(musicPath) && fs.statSync(musicPath).size > 0;
 
-    // Build filtergraph
     let filterLines = [];
 
-    // Scale and Ken Burns effect for each image
+    // Simple scale without Ken Burns for free tier
     imagePaths.forEach((_, i) => {
-      filterLines.push(
-        `[${i}:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,` +
-        `zoompan=z='min(zoom+0.0008,1.08)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=200:s=1280x720,` +
-        `setsar=1,fps=25[v${i}]`
-      );
+      filterLines.push(`[${i}:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=24[v${i}]`);
     });
 
-    // Concatenate all video streams
+    // Concatenate video streams
     const vInputs = imagePaths.map((_, i) => `[v${i}]`).join('');
     filterLines.push(`${vInputs}concat=n=${totalScenes}:v=1:a=0[vout]`);
 
-    // Concatenate all audio narrations
+    // Concatenate audio narrations
     const aInputs = audioFiles.map((_, i) => `[${totalScenes + i}:a]`).join('');
     filterLines.push(`${aInputs}concat=n=${audioCount}:v=0:a=1[narr]`);
 
     if (hasM) {
-      // Mix narration + music (music at 20% volume)
       filterLines.push(`[narr]volume=1.0[narr_v]`);
-      filterLines.push(`[${totalScenes + audioCount}:a]volume=0.2[music_v]`);
+      filterLines.push(`[${totalScenes + audioCount}:a]volume=0.15[music_v]`);
       filterLines.push(`[narr_v][music_v]amix=inputs=2:duration=first[aout]`);
     } else {
       filterLines.push(`[narr]volume=1.0[aout]`);
@@ -176,11 +170,12 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
       .complexFilter(filterLines.join(';'))
       .outputOptions([
         '-map [vout]', '-map [aout]',
-        '-c:v libx264', '-preset fast', '-crf 23',
-        '-c:a aac', '-b:a 192k',
+        '-c:v libx264', '-preset ultrafast', '-crf 28',
+        '-c:a aac', '-b:a 128k',
         '-movflags +faststart',
         '-pix_fmt yuv420p',
-        '-shortest'
+        '-shortest',
+        '-threads 1'
       ])
       .output(outputPath)
       .on('end', resolve)
