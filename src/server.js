@@ -80,11 +80,13 @@ async function generateImage(prompt, outputPath) {
   const token = getEnv('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN no configurado');
 
-  const res = await axios.post('https://api.replicate.com/v1/models/stability-ai/sdxl/predictions', {
+  const res = await axios.post('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
     input: {
       prompt: prompt + ', cinematic, high quality, 16:9, professional photography',
-      negative_prompt: 'blurry, low quality, ugly, deformed, watermark, text',
-      width: 1280, height: 720, num_outputs: 1, num_inference_steps: 25
+      num_outputs: 1,
+      aspect_ratio: '16:9',
+      output_format: 'png',
+      output_quality: 90
     }
   }, { headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' } });
 
