@@ -128,8 +128,12 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
     const cmd = ffmpeg();
     const imagePaths = scenes.map(s => s.imagePath);
 
-    // Add each image as input with shorter duration
-    imagePaths.forEach(img => cmd.input(img).inputOptions(['-loop 1', '-t 6']));
+    // Add each image with duration matching its audio
+    scenes.forEach((scene, i) => {
+      const words = (scene.narracion || '').split(' ').length;
+      const dur = Math.max(8, Math.ceil(words / 2.2) + 2);
+      cmd.input(imagePaths[i]).inputOptions(['-loop 1', `-t ${dur}`]);
+    });
 
     // Add each audio narration
     audioFiles.forEach(a => cmd.input(a));
@@ -160,7 +164,7 @@ async function assembleVideo(scenes, audioFiles, musicPath, hasMusic, outputPath
 
     if (hasM) {
       filterLines.push(`[narr]volume=1.0[narr_v]`);
-      filterLines.push(`[${totalScenes + audioCount}:a]volume=0.15[music_v]`);
+      filterLines.push(`[${totalScenes + audioCount}:a]volume=0.35[music_v]`);
       filterLines.push(`[narr_v][music_v]amix=inputs=2:duration=first[aout]`);
     } else {
       filterLines.push(`[narr]volume=1.0[aout]`);
@@ -243,7 +247,7 @@ Idea: "${idea}" | Duración: ${duracion} | Tono: ${tono}`
 app.post('/api/script', async (req, res) => {
   const { idea, duracion, tono, musicaMood } = req.body;
   if (!idea) return res.status(400).json({ error: 'Falta la idea' });
-  const durMap = { corto: '2 min, 4 escenas', medio: '4 min, 5 escenas', largo: '8 min, 7 escenas' };
+  const durMap = { corto: '2 min, 6 escenas', medio: '4 min, 10 escenas', largo: '8 min, 16 escenas' };
   const tonMap = { educativo: 'educativo con ejemplos', motivacional: 'motivacional', entretenido: 'entretenido', profesional: 'profesional' };
   try {
     const raw = await callClaude(
@@ -251,7 +255,7 @@ app.post('/api/script', async (req, res) => {
 Duración: ${durMap[duracion] || durMap.medio}. Tono: ${tonMap[tono] || 'educativo'}. ${musicaMood ? 'Música: ' + musicaMood : ''}
 
 Devolvé ÚNICAMENTE este JSON:
-{"titulo":"string max 60 chars","descripcion":"string 1 oracion","duracion":"X:XX","escenas":[{"tipo":"intro","label":"Introducción","narracion":"2-3 oraciones, empieza con pregunta o dato impactante","promptImagen":"prompt en ingles estilo fotografico"},{"tipo":"scene","label":"Escena 1: nombre","narracion":"texto, termina con gancho","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 2: nombre","narracion":"texto, termina con gancho","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 3: nombre","narracion":"texto","promptImagen":"prompt ingles"},{"tipo":"cta","label":"Cierre","narracion":"cierre motivador y pedido de suscripcion","promptImagen":"prompt ingles"}]}`,
+{"titulo":"string max 60 chars","descripcion":"string 1 oracion","duracion":"X:XX","escenas":[{"tipo":"intro","label":"Introducción","narracion":"2-3 oraciones, empieza con pregunta o dato impactante","promptImagen":"prompt en ingles estilo fotografico"},{"tipo":"scene","label":"Escena 1: nombre","narracion":"texto, termina con gancho","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 2: nombre","narracion":"texto, termina con gancho","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 3: nombre","narracion":"texto","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 4: nombre","narracion":"2-3 oraciones","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 5: nombre","narracion":"2-3 oraciones","promptImagen":"prompt ingles"},{"tipo":"scene","label":"Escena 6: nombre","narracion":"2-3 oraciones","promptImagen":"prompt ingles"},{"tipo":"cta","label":"Cierre","narracion":"cierre motivador y pedido de suscripcion","promptImagen":"prompt ingles"}]}`,
       'Sos un experto en contenido viral para YouTube en español latino. Respondé SOLO con JSON válido sin backticks.',
       2000
     );
