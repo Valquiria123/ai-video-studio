@@ -46,7 +46,7 @@ async function callClaude(prompt, system, maxTokens = 2000) {
   const key = getEnv('CLAUDE_API_KEY');
   if (!key) throw new Error('CLAUDE_API_KEY no configurada');
   const res = await axios.post('https://api.anthropic.com/v1/messages', {
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-3-5-sonnet-20240620',
     max_tokens: maxTokens,
     system: system || 'Respondé SOLO en JSON válido sin backticks ni texto extra.',
     messages: [{ role: 'user', content: prompt }]
